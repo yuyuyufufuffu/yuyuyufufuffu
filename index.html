@@ -25,14 +25,36 @@ footer{padding:36px 0;color:var(--muted);border-top:1px solid var(--line);font-s
 <section id="about"><h2>About me</h2><p class="sub">I work with learners across age groups and proficiency levels, with a focus on structured English instruction, international exam preparation, and meaningful feedback. I'm interested in using AI to make quality education more accessible and personalized without losing the human side of teaching.</p></section>
 <section id="expertise"><h2>Areas of expertise</h2><p class="sub">A practical mix of language teaching, assessment, and instructional design.</p><div class="grid"><article class="card"><div class="num">01 / LANGUAGE</div><h3>Exam preparation</h3><p>IELTS, TOEFL iBT, SAT Reading & Writing, and Cambridge English qualifications.</p></article><article class="card"><div class="num">02 / DESIGN</div><h3>Learning resources</h3><p>Tailored lesson plans, vocabulary and grammar practice, reading strategies, and writing frameworks.</p></article><article class="card"><div class="num">03 / SUPPORT</div><h3>Personalized instruction</h3><p>Goal-based study pathways, scaffolded practice, and clear student feedback.</p></article></div></section>
 <section id="ai"><h2>AI in education</h2><p class="sub">I'm exploring responsible, teacher-guided approaches to AI-assisted learning. These are interests and directions for future work, not claims about released products.</p><div class="tags"><span class="tag">AI-assisted lesson planning</span><span class="tag">Adaptive practice</span><span class="tag">Writing feedback</span><span class="tag">Learning analytics</span><span class="tag">Educational automation</span><span class="tag">Language learning tools</span></div></section>
-<section id="ask"><h2>Ask about my work</h2><p class="sub">Try the built-in profile guide to quickly explore my background.</p><div class="assistant chat"><div class="kicker">Interactive profile guide</div><div id="response" class="bubble" aria-live="polite">Hi! You can ask me about Yu's teaching specialties, exams, or AI interests.</div><div class="suggestions"><button type="button" data-q="Which exams do you teach?">Exams</button><button type="button" data-q="What are your AI interests?">AI interests</button><button type="button" data-q="What teaching resources do you design?">Teaching resources</button></div><form class="ask" id="form"><input id="question" maxlength="250" placeholder="Ask a question..." aria-label="Your question" required><button type="submit">Ask</button></form><div class="note">This is an offline FAQ-style profile guide, not a live AI chatbot. It sends no questions to a server.</div></div></section>
+<section id="ask"><h2>Ask about my work</h2><p class="sub">Try the built-in profile guide to quickly explore my background.</p><div class="assistant chat"><div class="kicker">AI profile assistant</div><div id="response" class="bubble" aria-live="polite">Hi! You can ask me about Yu's teaching specialties, exams, or AI interests.</div><div class="suggestions"><button type="button" data-q="Which exams do you teach?">Exams</button><button type="button" data-q="What are your AI interests?">AI interests</button><button type="button" data-q="What teaching resources do you design?">Teaching resources</button></div><form class="ask" id="form"><input id="question" maxlength="500" placeholder="Ask a question..." aria-label="Your question" required><button type="submit">Ask</button></form><div class="note">Powered by OpenAI when connected. Avoid sharing private student information.</div></div></section>
 </main><footer>© <span id="year"></span> Yu · <a href="https://github.com/yuyuyufufuffu">GitHub</a> · Made for thoughtful learning.</footer>
 </div>
 <script>
 document.getElementById('year').textContent=new Date().getFullYear();
-const answer=q=>{const x=q.toLowerCase();if(/ielts|toefl|sat|cambridge|exam|test|qualification/.test(x))return 'Yu works with IELTS, TOEFL iBT, SAT Reading & Writing, and Cambridge English, including YLE, Key, Preliminary, First and Proficiency.';if(/ai|artificial|technology|automation|agent|model/.test(x))return 'Yu is exploring teacher-guided AI for lesson planning, personalized practice, writing feedback, educational workflows and learning analytics.';if(/resource|lesson|curriculum|material|grammar|vocabulary|reading|writing/.test(x))return 'Yu creates structured lesson plans, scaffolded reading and writing instruction, vocabulary and grammar practice, and personalized study pathways.';if(/contact|email|connect|github/.test(x))return 'You can find Yu on GitHub at github.com/yuyuyufufuffu. A professional contact address has not been listed yet.';if(/who|about|background|teach|special/.test(x))return 'Yu is an independent English educator specializing in exam preparation, curriculum design and personalized language learning.';return 'I can help with questions about Yu’s teaching background, exam preparation, learning resources, AI interests, or GitHub profile. Try one of those topics!';};
-function ask(q){document.getElementById('response').textContent=answer(q)}
-document.getElementById('form').addEventListener('submit',e=>{e.preventDefault();const inp=document.getElementById('question');ask(inp.value);inp.value=''});
-document.querySelectorAll('[data-q]').forEach(b=>b.addEventListener('click',()=>ask(b.dataset.q)));
+const AI_ENDPOINT = '';
+const conversation = [];
+const box=document.getElementById('response');
+const form=document.getElementById('form');
+const input=document.getElementById('question');
+const button=form.querySelector('button');
+const suggestions=Array.from(document.querySelectorAll('[data-q]'));
+if(!AI_ENDPOINT){
+ box.textContent='The AI chatbot is ready to connect. The site owner needs to finish the secure backend setup.';
+ input.disabled=true;button.disabled=true;suggestions.forEach(b=>b.disabled=true);
+}
+async function ask(message){
+ if(!AI_ENDPOINT||!message.trim())return;
+ button.disabled=true;suggestions.forEach(b=>b.disabled=true);box.textContent='Thinking…';
+ try{
+  const res=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:conversation.slice(-8)})});
+  const data=await res.json();
+  if(!res.ok||!data.reply)throw new Error(data.error||'Service unavailable');
+  box.textContent=data.reply;
+  conversation.push({role:'user',content:message},{role:'assistant',content:data.reply});
+  if(conversation.length>16)conversation.splice(0,conversation.length-16);
+ }catch(error){box.textContent='Unable to reach AI: '+(error.message||'Try again.')}
+ finally{button.disabled=false;suggestions.forEach(b=>b.disabled=false)}
+}
+form.addEventListener('submit',e=>{e.preventDefault();const q=input.value.trim();input.value='';ask(q)});
+suggestions.forEach(b=>b.addEventListener('click',()=>ask(b.dataset.q)));
 </script>
 </body></html>
